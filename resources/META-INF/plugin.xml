@@ -1,0 +1,43 @@
+<idea-plugin>
+  <id>com.therdnotes</id>
+  <name>AWS Lambda Java code updater</name>
+  <version>1.1</version>
+  <vendor email="raevilman@gmail.com" url="">raevilman</vendor>
+
+  <description><![CDATA[
+      This plugin is used to update java code in AWS Lambda function.
+      <br>Requires AWS CLI to be setup beforehand.
+    ]]></description>
+
+  <change-notes><![CDATA[
+      Initial release
+    ]]>
+  </change-notes>
+
+  <!-- please see http://www.jetbrains.org/intellij/sdk/docs/basics/getting_started/build_number_ranges.html for description -->
+  <idea-version since-build="145.0"/>
+
+  <!-- please see http://www.jetbrains.org/intellij/sdk/docs/basics/getting_started/plugin_compatibility.html
+       on how to target different products -->
+  <!-- uncomment to enable plugin in all products
+  <depends>com.intellij.modules.lang</depends>
+  -->
+
+  <extensions defaultExtensionNs="com.intellij">
+    <!-- Add your extensions here -->
+    <projectService serviceImplementation="com.therdnotes.intellij.plugin.StateService"/>
+  </extensions>
+
+  <actions>
+    <!-- Add your actions here -->
+    <action class="com.therdnotes.intellij.plugin.MainDialog"
+            id="raevilman.awslambda"
+            text="Update AWS Lambda | Java"
+            description="Tool to update jar file in AWS Lambda function">
+
+      <add-to-group group-id="ToolsMenu" anchor="last"/>
+      <keyboard-shortcut first-keystroke="control alt A" second-keystroke="L" keymap="$default"/>
+    </action>
+  </actions>
+
+</idea-plugin>
