@@ -30,6 +30,7 @@ import java.io.RandomAccessFile;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileChannel.MapMode;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.Set;
 import javax.swing.DefaultComboBoxModel;
@@ -44,6 +45,7 @@ import org.jetbrains.annotations.NotNull;
 
 public class MainDialog extends AnAction
 {
+    public static final String ALL_CONFIG = "ALL";
     ComboBox comboBox;
     State state;
     DialogBuilder mainBuilder;
@@ -103,8 +105,15 @@ public class MainDialog extends AnAction
                 if (this.comboBox.getItemCount() > 0) {
                     String key = this.comboBox.getSelectedItem().toString();
                     System.out.println("Selected item:" + key);
-                    LambdaConfig lambdaConfig = (LambdaConfig)this.state.getConfigs().get(key);
-                    updateLambdaCode(lambdaConfig, project);
+                    if(key.equalsIgnoreCase(ALL_CONFIG)){
+                        Map<String, LambdaConfig> configs = state.getConfigs();
+                        for (LambdaConfig lambdaConfig : configs.values()) {
+                            updateLambdaCode(lambdaConfig, project);
+                        }
+                    } else{
+                        LambdaConfig lambdaConfig = (LambdaConfig)this.state.getConfigs().get(key);
+                        updateLambdaCode(lambdaConfig, project);
+                    }
                 }break;
             case 1:
             default:
@@ -114,7 +123,7 @@ public class MainDialog extends AnAction
 
     private void updateLambdaCode(final LambdaConfig lambdaConfig, Project project)
     {
-        ProgressManager.getInstance().run(new Task.Backgroundable(project, "Uploading jar to AWS Lambda", true)
+        ProgressManager.getInstance().run(new Task.Backgroundable(project, "Uploading jar to AWS Lambda:"+lambdaConfig.getFunctionName(), true)
         {
             public void run(@NotNull ProgressIndicator progressIndicator)
             {
@@ -131,7 +140,12 @@ public class MainDialog extends AnAction
                             NotificationType.INFORMATION);
                     Notifications.Bus.notify(notification);
                 }catch (Exception e){
-                    Notification notification = new Notification("raevilman.awslambda","Error",e.getMessage(),
+                    String message = e.getMessage();
+                    if(message==null||message.isEmpty()){
+                        message = e.getClass().getName();
+                    }
+                    message = lambdaConfig.getFunctionName()+" " +message;
+                    Notification notification = new Notification("raevilman.awslambda","Error", message,
                             NotificationType.ERROR);
                     Notifications.Bus.notify(notification);
                 }
@@ -232,13 +246,32 @@ public class MainDialog extends AnAction
 
     private void refreshComboBox()
     {
-        this.comboBox.setModel(new DefaultComboBoxModel(this.state.configs.keySet().toArray()));
-        if (this.state.getConfigs().size() > 0) {
+        int size = this.state.getConfigs().size();
+        if (size > 0) {
             this.mainBuilder.setOkActionEnabled(true);
             this.jButtonDel.setEnabled(true);
         } else {
             this.mainBuilder.setOkActionEnabled(false);
             this.jButtonDel.setEnabled(false);
         }
+        Set<String> keys = this.state.configs.keySet();
+        if(keys.size()<2){
+            this.comboBox.setModel(new DefaultComboBoxModel(keys.toArray()));
+        } else{
+            String[] objArr = new String[keys.size()];
+            int i=0;
+            for (String key : keys) {
+                objArr[i] = key;
+                i++;
+            }
+            Arrays.sort(objArr);
+            String[] objArrNew = new String[keys.size()+1];
+            for (int j = 0; j < objArr.length; j++) {
+                objArrNew[j] = objArr[j];
+            }
+            objArrNew[keys.size()] = ALL_CONFIG;
+            this.comboBox.setModel(new DefaultComboBoxModel(objArrNew));
+        }
+
     }
 }
