@@ -16,5 +16,5 @@ You can install this from Intellij-> Settings-> Plugins-> Install plugin from di
 
 **Tasks List**  
 
-- [ ] Edit Mode
+- [x] Edit Mode
 - [x] Update All option

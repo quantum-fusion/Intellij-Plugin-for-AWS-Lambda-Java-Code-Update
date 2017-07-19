@@ -14,30 +14,23 @@ import com.intellij.openapi.components.ServiceManager;
 import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.progress.ProgressManager;
 import com.intellij.openapi.progress.Task;
-import com.intellij.openapi.progress.Task.Backgroundable;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.ComboBox;
 import com.intellij.openapi.ui.DialogBuilder;
-import com.intellij.openapi.ui.DialogBuilder.CustomizableAction;
 import com.intellij.openapi.ui.PanelWithText;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.PrintStream;
 import java.io.RandomAccessFile;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
-import java.nio.channels.FileChannel.MapMode;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Set;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.GroupLayout;
-import javax.swing.GroupLayout.Alignment;
-import javax.swing.GroupLayout.ParallelGroup;
-import javax.swing.GroupLayout.SequentialGroup;
 import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JTextField;
@@ -50,6 +43,7 @@ public class MainDialog extends AnAction
     State state;
     DialogBuilder mainBuilder;
     JButton jButtonDel;
+    JButton jButtonEdit;
 
     @Override
     public void actionPerformed(AnActionEvent event)
@@ -77,9 +71,21 @@ public class MainDialog extends AnAction
         jButtonAdd.addActionListener(new ActionListener(){
             public void actionPerformed(ActionEvent e) {
                 System.out.println("Add pressed");
-                MainDialog.this.addConfig(project);
+                MainDialog.this.addConfig(project, false, null, null);
             }
         });
+
+        jButtonEdit = new JButton("Edit");
+        jButtonEdit.addActionListener(new ActionListener(){
+            public void actionPerformed(ActionEvent e) {
+                System.out.println("Edit pressed");
+                String key = MainDialog.this.comboBox.getSelectedItem().toString();
+                System.out.println("Selected item:" + key);
+                LambdaConfig lambdaConfig = (LambdaConfig)state.getConfigs().get(key);
+                MainDialog.this.addConfig(project, true, key, lambdaConfig);
+            }
+        });
+
         this.jButtonDel = new JButton("Del");
         this.jButtonDel.addActionListener(new ActionListener(){
             public void actionPerformed(ActionEvent e) {
@@ -93,6 +99,7 @@ public class MainDialog extends AnAction
             }
         });
         panelWithText.add(jButtonAdd);
+        panelWithText.add(jButtonEdit);
         panelWithText.add(this.jButtonDel);
 
         this.mainBuilder.setCenterPanel(panelWithText);
@@ -169,22 +176,35 @@ public class MainDialog extends AnAction
         return null;
     }
 
-    private void addConfig(Project project) {
-        JTextField configNameText = new JTextField(20);
+    private void addConfig(Project project, boolean isEditMode, String p_configName, LambdaConfig p_lambdaConfig) {
+
+        String old_configName = "";
+        String old_functionName = "";
+        String old_jarFilePath = "";
+        if(isEditMode&&null!=p_lambdaConfig){
+            old_configName = p_configName;
+            old_functionName = p_lambdaConfig.getFunctionName();
+            old_jarFilePath = p_lambdaConfig.getJarFilePath();
+        }
+        JTextField configNameText = new JTextField(old_configName,20);
         JLabel configNameLabel = new JLabel("Config name:");
         configNameLabel.setLabelFor(configNameText);
 
-        JTextField lambdaFunctionNameText = new JTextField(20);
+        JTextField lambdaFunctionNameText = new JTextField(old_functionName,20);
         JLabel lambdaFunctionNameLabel = new JLabel("Lambda function name:");
         configNameLabel.setLabelFor(lambdaFunctionNameText);
 
-        JTextField jarFileNameText = new JTextField(20);
+        JTextField jarFileNameText = new JTextField(old_jarFilePath,20);
         JLabel jarFileNameLabel = new JLabel("Jar file path");
         configNameLabel.setLabelFor(jarFileNameText);
 
         DialogBuilder builder = new DialogBuilder(project);
         builder.setTitle("AWS Lambda Jar updater");
-        builder.addOkAction().setText("Add");
+        if(isEditMode){
+            builder.addOkAction().setText("Update");
+        } else{
+            builder.addOkAction().setText("Add");
+        }
         builder.addCancelAction().setText("Cancel");
 
         PanelWithText panel = new PanelWithText("");
@@ -236,6 +256,9 @@ public class MainDialog extends AnAction
                 lambdaConfig.setFunctionName(lambdaFunctionName);
                 lambdaConfig.setJarFilePath(jarFilePath);
                 this.state.getConfigs().put(configName, lambdaConfig);
+                if(!old_configName.equalsIgnoreCase(configName)){
+                    state.getConfigs().remove(old_configName);
+                }
                 refreshComboBox();
                 break;
             case 1:
@@ -250,9 +273,11 @@ public class MainDialog extends AnAction
         if (size > 0) {
             this.mainBuilder.setOkActionEnabled(true);
             this.jButtonDel.setEnabled(true);
+            this.jButtonEdit.setEnabled(true);
         } else {
             this.mainBuilder.setOkActionEnabled(false);
             this.jButtonDel.setEnabled(false);
+            this.jButtonEdit.setEnabled(false);
         }
         Set<String> keys = this.state.configs.keySet();
         if(keys.size()<2){
