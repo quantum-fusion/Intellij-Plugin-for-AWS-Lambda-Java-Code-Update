@@ -13,8 +13,8 @@ You can install this from Intellij-> Settings-> Plugins-> Install plugin from di
 ![Alt Text](https://github.com/raevilman/Intellij-Plugin-for-AWS-Lambda-Java-Code-Update/raw/master/Demo.gif)  
 
 
-     
+
 **Tasks List**  
 
 - [ ] Edit Mode
-- [ ] Update All option
+- [x] Update All option
