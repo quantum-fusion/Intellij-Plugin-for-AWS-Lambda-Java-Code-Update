@@ -5,9 +5,16 @@ This plugin is used to update java code in AWS Lambda function i.e. uploads jar 
 
 AWSLambdaJavaCodeUpdater.zip is plugin file.  
 You can install this from Intellij-> Settings-> Plugins-> Install plugin from disk  
-  
-  
+
+
   **Demo**  
-  
-  
-![Alt Text](https://github.com/raevilman/Intellij-Plugin-for-AWS-Lambda-Java-Code-Update/raw/master/Demo.gif)
+
+
+![Alt Text](https://github.com/raevilman/Intellij-Plugin-for-AWS-Lambda-Java-Code-Update/raw/master/Demo.gif)  
+
+
+     
+**Tasks List**  
+
+- [ ] Edit Mode
+- [ ] Update All option
