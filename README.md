@@ -1,4 +1,6 @@
 # Intellij-Plugin-for-AWS-Lambda-Java-Code-Update
+[JetBrains Plugins repo URL](https://plugins.jetbrains.com/plugin/9849-aws-lambda-java-code-updater)  
+
 This plugin is used to update java code in AWS Lambda function i.e. uploads jar file to AWS lambda function.
 
 **Important:** Make sure you have AWS CLI already setup on your system. The plugin uses default profile from AWS CLI to interact with your AWS account. Make sure your AWS user has sufficient IAM policy/roles to update lambda code.
