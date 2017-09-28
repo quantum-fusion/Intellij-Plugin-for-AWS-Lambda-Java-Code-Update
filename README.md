@@ -20,3 +20,4 @@ You can install this from Intellij-> Settings-> Plugins-> Install plugin from di
 
 - [x] Edit Mode
 - [x] Update All option
+- [ ] AWS CLI Profiles support  
