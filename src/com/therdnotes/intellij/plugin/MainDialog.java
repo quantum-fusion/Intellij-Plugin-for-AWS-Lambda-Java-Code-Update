@@ -1,7 +1,13 @@
 package com.therdnotes.intellij.plugin;
 
+import com.amazonaws.auth.AWSCredentialsProvider;
+import com.amazonaws.auth.profile.ProfileCredentialsProvider;
+import com.amazonaws.auth.profile.ProfilesConfigFile;
+import com.amazonaws.auth.profile.internal.BasicProfile;
 import com.amazonaws.services.lambda.AWSLambda;
 import com.amazonaws.services.lambda.AWSLambdaClientBuilder;
+import com.amazonaws.services.lambda.model.FunctionConfiguration;
+import com.amazonaws.services.lambda.model.ListFunctionsResult;
 import com.amazonaws.services.lambda.model.UpdateFunctionCodeRequest;
 import com.amazonaws.services.lambda.model.UpdateFunctionCodeResult;
 import com.intellij.notification.Notification;
@@ -27,19 +33,18 @@ import java.io.RandomAccessFile;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import javax.swing.DefaultComboBoxModel;
-import javax.swing.GroupLayout;
-import javax.swing.JButton;
-import javax.swing.JLabel;
-import javax.swing.JTextField;
+import javax.swing.*;
+
 import org.jetbrains.annotations.NotNull;
 
 public class MainDialog extends AnAction
 {
     public static final String ALL_CONFIG = "ALL";
-    ComboBox comboBox;
+    ComboBox functionsComboBox;
+    ComboBox profilesComboBox;
     State state;
     DialogBuilder mainBuilder;
     JButton jButtonDel;
@@ -52,8 +57,8 @@ public class MainDialog extends AnAction
         Project project = (Project)event.getData(PlatformDataKeys.PROJECT);
         StateService stateService = (StateService)ServiceManager.getService(project, StateService.class);
         this.state = stateService.getState();
-        System.out.println(this.state.toString());
-        System.out.println("State:" + this.state.toString());
+//        System.out.println(this.state.toString());
+//        System.out.println("State:" + this.state.toString());
         showMainDialog(project);
     }
 
@@ -64,9 +69,11 @@ public class MainDialog extends AnAction
         this.mainBuilder.addOkAction().setText("Update");
         this.mainBuilder.addCancelAction().setText("Cancel");
 
-        PanelWithText panelWithText = new PanelWithText("Select:");
-        this.comboBox = new ComboBox();
-        panelWithText.add(this.comboBox);
+        PanelWithText row1Panel = new PanelWithText("Function:");
+        this.functionsComboBox = new ComboBox();
+        row1Panel.add(this.functionsComboBox);
+
+        //Start:Add button
         JButton jButtonAdd = new JButton("Add");
         jButtonAdd.addActionListener(new ActionListener(){
             public void actionPerformed(ActionEvent e) {
@@ -74,43 +81,63 @@ public class MainDialog extends AnAction
                 MainDialog.this.addConfig(project, false, null, null);
             }
         });
+        //End: Add button
 
+        //Start: Edit button
         jButtonEdit = new JButton("Edit");
         jButtonEdit.addActionListener(new ActionListener(){
             public void actionPerformed(ActionEvent e) {
                 System.out.println("Edit pressed");
-                String key = MainDialog.this.comboBox.getSelectedItem().toString();
+                String key = MainDialog.this.functionsComboBox.getSelectedItem().toString();
                 System.out.println("Selected item:" + key);
                 LambdaConfig lambdaConfig = (LambdaConfig)state.getConfigs().get(key);
                 MainDialog.this.addConfig(project, true, key, lambdaConfig);
             }
         });
+        //End: Edit button
 
+        //Start: Del button
         this.jButtonDel = new JButton("Del");
         this.jButtonDel.addActionListener(new ActionListener(){
             public void actionPerformed(ActionEvent e) {
                 System.out.println("Del pressed");
-                if (MainDialog.this.comboBox.getItemCount() > 0) {
-                    String key = MainDialog.this.comboBox.getSelectedItem().toString();
+                if (MainDialog.this.functionsComboBox.getItemCount() > 0) {
+                    String key = MainDialog.this.functionsComboBox.getSelectedItem().toString();
                     System.out.println("Selected item:" + key);
                     MainDialog.this.state.getConfigs().remove(key);
                     MainDialog.this.refreshComboBox();
                 }
             }
         });
-        panelWithText.add(jButtonAdd);
-        panelWithText.add(jButtonEdit);
-        panelWithText.add(this.jButtonDel);
+        //End: Del button
 
-        this.mainBuilder.setCenterPanel(panelWithText);
+        //Start: profiles combobox
+        PanelWithText row2Panel = new PanelWithText("AWS Profile:");
+        this.profilesComboBox = new ComboBox();
+        row2Panel.add(this.profilesComboBox);
+        this.profilesComboBox.setModel(new DefaultComboBoxModel(getBasicProfiles()));
+        //End: profiles comboBox
+
+        row1Panel.add(jButtonAdd);
+        row1Panel.add(jButtonEdit);
+        row1Panel.add(this.jButtonDel);
+
+        PanelWithText mainPanel = new PanelWithText("");
+        mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
+        mainPanel.add(row1Panel);
+        mainPanel.add(row2Panel);
+
+        this.mainBuilder.setCenterPanel(mainPanel);
+//        this.mainBuilder.setCenterPanel(row1Panel);
+
         refreshComboBox();
 
         switch (this.mainBuilder.show())
         {
             case 0:
                 System.out.println("Ok pressed");
-                if (this.comboBox.getItemCount() > 0) {
-                    String key = this.comboBox.getSelectedItem().toString();
+                if (this.functionsComboBox.getItemCount() > 0) {
+                    String key = this.functionsComboBox.getSelectedItem().toString();
                     System.out.println("Selected item:" + key);
                     if(key.equalsIgnoreCase(ALL_CONFIG)){
                         Map<String, LambdaConfig> configs = state.getConfigs();
@@ -121,15 +148,29 @@ public class MainDialog extends AnAction
                         LambdaConfig lambdaConfig = (LambdaConfig)this.state.getConfigs().get(key);
                         updateLambdaCode(lambdaConfig, project);
                     }
-                }break;
+                }
+                break;
             case 1:
             default:
                 System.out.println("Cancel pressed");
         }
     }
 
+    private Object[] getBasicProfiles() {
+        ProfilesConfigFile profilesConfigFile = new ProfilesConfigFile();
+        Map<String, BasicProfile> allBasicProfiles = profilesConfigFile.getAllBasicProfiles();
+        return allBasicProfiles.keySet().toArray();
+    }
+
     private void updateLambdaCode(final LambdaConfig lambdaConfig, Project project)
     {
+//        AWSLambda lambdaClient = (AWSLambda)AWSLambdaClientBuilder.standard().withCredentials(getSelectedProfileCreds()).build();
+//        ListFunctionsResult listFunctionsResult = lambdaClient.listFunctions();
+//        List<FunctionConfiguration> functions = listFunctionsResult.getFunctions();
+//        FunctionConfiguration functionConfiguration = functions.get(0);
+//        System.out.println("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^");
+//        System.out.println(functionConfiguration.getFunctionName()+" : "+functionConfiguration.getFunctionArn());
+//        System.out.println("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^");
         ProgressManager.getInstance().run(new Task.Backgroundable(project, "Uploading jar to AWS Lambda:"+lambdaConfig.getFunctionName(), true)
         {
             public void run(@NotNull ProgressIndicator progressIndicator)
@@ -140,7 +181,7 @@ public class MainDialog extends AnAction
                     updateFunctionCodeRequest.setFunctionName(lambdaConfig.getFunctionName());
 
                     updateFunctionCodeRequest.setZipFile(MainDialog.getJarByteBuffer(lambdaConfig.getJarFilePath()));
-                    AWSLambda lambdaClient = (AWSLambda)AWSLambdaClientBuilder.standard().build();
+                    AWSLambda lambdaClient = (AWSLambda)AWSLambdaClientBuilder.standard().withCredentials(getSelectedProfileCreds()).build();
                     UpdateFunctionCodeResult updateFunctionCodeResult = lambdaClient.updateFunctionCode(updateFunctionCodeRequest);
                     System.out.println("Updated!!!");
                     Notification notification = new Notification("raevilman.awslambda","Success",lambdaConfig.getFunctionName()+" Lambda successfully updated.",
@@ -158,6 +199,16 @@ public class MainDialog extends AnAction
                 }
             }
         });
+    }
+
+    private AWSCredentialsProvider getSelectedProfileCreds() {
+        if (profilesComboBox.getItemCount() > 0) {
+            String key = this.profilesComboBox.getSelectedItem().toString();
+            System.out.println("Selected profile:" + key);
+            return new ProfileCredentialsProvider(key);
+        }else{
+            return new ProfileCredentialsProvider();
+        }
     }
 
     private static MappedByteBuffer getJarByteBuffer(String jarFilePath)
@@ -281,7 +332,7 @@ public class MainDialog extends AnAction
         }
         Set<String> keys = this.state.configs.keySet();
         if(keys.size()<2){
-            this.comboBox.setModel(new DefaultComboBoxModel(keys.toArray()));
+            this.functionsComboBox.setModel(new DefaultComboBoxModel(keys.toArray()));
         } else{
             String[] objArr = new String[keys.size()];
             int i=0;
@@ -295,7 +346,7 @@ public class MainDialog extends AnAction
                 objArrNew[j] = objArr[j];
             }
             objArrNew[keys.size()] = ALL_CONFIG;
-            this.comboBox.setModel(new DefaultComboBoxModel(objArrNew));
+            this.functionsComboBox.setModel(new DefaultComboBoxModel(objArrNew));
         }
 
     }
