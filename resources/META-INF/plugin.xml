@@ -1,7 +1,7 @@
 <idea-plugin>
   <id>com.therdnotes</id>
   <name>AWS Lambda Java code updater</name>
-  <version>1.1</version>
+  <version>1.2</version>
   <vendor email="raevilman@gmail.com" url="">raevilman</vendor>
 
   <description><![CDATA[
