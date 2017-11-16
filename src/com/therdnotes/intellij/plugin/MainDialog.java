@@ -220,8 +220,10 @@ public class MainDialog extends AnAction
             return fileChannel.map(FileChannel.MapMode.READ_ONLY, 0L, fileChannel.size());
         }
         catch (FileNotFoundException e) {
+            //TODO: throw plugin error
             e.printStackTrace();
         } catch (IOException e) {
+            //TODO: throw plugin error
             e.printStackTrace();
         }
         return null;
