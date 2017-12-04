@@ -21,3 +21,4 @@ You can install this from Intellij-> Settings-> Plugins-> Install plugin from di
 - [x] Edit Mode
 - [x] Update All option
 - [x] AWS CLI Profiles support
+- [ ] S3 support for artifact's size > 10MB
