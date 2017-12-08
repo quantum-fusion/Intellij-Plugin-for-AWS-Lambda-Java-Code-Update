@@ -1,7 +1,7 @@
 <idea-plugin>
   <id>com.therdnotes</id>
   <name>AWS Lambda Java code updater</name>
-  <version>1.2</version>
+  <version>1.4</version>
   <vendor email="raevilman@gmail.com" url="">raevilman</vendor>
 
   <description><![CDATA[
@@ -10,7 +10,11 @@
     ]]></description>
 
   <change-notes><![CDATA[
-      Initial release
+      [v1.4] Added S3 Support
+      [v1.3] Bug Fixes
+      [v1.2] Added AWS CLI Profiles support
+      [v1.1] Update all lambda at once
+      [v1.0] Initial release
     ]]>
   </change-notes>
 

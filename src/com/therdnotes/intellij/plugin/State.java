@@ -10,6 +10,24 @@ import java.util.Map.Entry;
 public class State
 {
     Map<String, LambdaConfig> configs = new HashMap();
+    String lastS3Bucket = "";
+    String lastS3KeyPrefix = "";
+
+    public String getLastS3Bucket() {
+        return lastS3Bucket;
+    }
+
+    public void setLastS3Bucket(String lastS3Bucket) {
+        this.lastS3Bucket = lastS3Bucket;
+    }
+
+    public String getLastS3KeyPrefix() {
+        return lastS3KeyPrefix;
+    }
+
+    public void setLastS3KeyPrefix(String lastS3KeyPrefix) {
+        this.lastS3KeyPrefix = lastS3KeyPrefix;
+    }
 
     public Map<String, LambdaConfig> getConfigs() {
         return this.configs;
